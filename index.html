@@ -3,45 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dohee's 3D Maze Game</title>
+    <title>DoMazeGame - 3D Maze Adventure</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            overflow: hidden;
             color: white;
         }
         
         .container {
-            text-align: center;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+            width: 100vw;
+            height: 100vh;
         }
         
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        canvas {
+            display: block;
+            cursor: pointer;
+        }
+        
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .ui-element {
+            position: absolute;
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .title {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 4em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
         }
         
         .menu-buttons {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
             gap: 20px;
-            margin: 30px 0;
+            text-align: center;
         }
         
         .btn {
             padding: 15px 30px;
-            font-size: 1.2em;
+            font-size: 1.5em;
             border: none;
             border-radius: 10px;
             cursor: pointer;
@@ -49,429 +80,704 @@
             background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
             color: white;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            min-width: 200px;
         }
         
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            animation: shake 0.5s ease-in-out;
         }
         
-        .btn:active {
-            transform: translateY(-1px);
-        }
-        
-        .game-canvas {
-            border: 3px solid #fff;
-            border-radius: 10px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        
-        .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid white;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
+        @keyframes shake {
+            0%, 100% { transform: translateY(-3px) scale(1.05) rotate(0deg); }
+            25% { transform: translateY(-3px) scale(1.05) rotate(-2deg); }
+            75% { transform: translateY(-3px) scale(1.05) rotate(2deg); }
         }
         
         .controls {
-            position: absolute;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 10px;
-            color: white;
+            background: rgba(0, 0, 0, 0.8);
             font-size: 0.9em;
+            max-width: 300px;
         }
         
-        .success-message {
-            position: fixed;
+        .status {
+            top: 20px;
+            left: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .loading {
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .progress-bar {
+            width: 300px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px auto;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .success-message {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            text-align: center;
             background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
             padding: 30px 50px;
             border-radius: 20px;
-            font-size: 2em;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            animation: pulse 0.5s ease-in-out;
+            animation: celebration 0.8s ease-in-out;
         }
         
-        @keyframes pulse {
-            0% { transform: translate(-50%, -50%) scale(0.8); }
-            50% { transform: translate(-50%, -50%) scale(1.1); }
-            100% { transform: translate(-50%, -50%) scale(1); }
+        @keyframes celebration {
+            0% { transform: translate(-50%, -50%) scale(0.5) rotate(-10deg); }
+            50% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
         }
         
         .hidden {
-            display: none;
+            display: none !important;
+        }
+        
+        .game-info {
+            bottom: 20px;
+            left: 20px;
+            font-size: 1em;
+            background: rgba(0, 100, 0, 0.8);
+            border: 2px solid #00ff00;
         }
     </style>
 </head>
 <body>
-    <div id="mainMenu" class="container">
-        <h1>Welcome to Dohee's 3D Maze Game!</h1>
-        <div class="menu-buttons">
-            <button class="btn" onclick="showGameModes()">게임 모드 선택</button>
-            <button class="btn" onclick="showCustomGame()">커스텀 게임 만들기</button>
+    <div class="container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="ui-overlay">
+            <!-- 시작 화면 -->
+            <div id="startPage" class="ui-element title">
+                DoMazeGame
+                <div class="loading">
+                    <div>3D 미로 어드벤처에 오신 것을 환영합니다!</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="startProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 메뉴 선택 화면 -->
+            <div id="menuPage" class="ui-element menu-buttons hidden">
+                <h2>게임 모드를 선택하세요</h2>
+                <button class="btn" onclick="startGame('mode1')">1인칭 모드</button>
+                <button class="btn" onclick="startGame('mode2')">3인칭 모드</button>
+                <button class="btn" onclick="startGame('custom')">커스텀 모드</button>
+            </div>
+            
+            <!-- 커스텀 메뉴 화면 -->
+            <div id="customPage" class="ui-element menu-buttons hidden">
+                <h2>커스텀 게임 만들기</h2>
+                <div>
+                    <label>미로 크기: </label>
+                    <select id="mazeSize">
+                        <option value="10">작음 (10x10)</option>
+                        <option value="15" selected>보통 (15x15)</option>
+                        <option value="20">큼 (20x20)</option>
+                    </select>
+                </div>
+                <br>
+                <button class="btn" onclick="createCustomGame()">커스텀 게임 시작</button>
+                <button class="btn" onclick="showMenu()" style="background: rgba(255,255,255,0.3);">뒤로가기</button>
+            </div>
+            
+            <!-- 게임 상태 -->
+            <div id="gameStatus" class="ui-element status hidden">
+                현재 모드: <span id="currentMode">-</span>
+            </div>
+            
+            <!-- 조작법 -->
+            <div id="gameControls" class="ui-element controls hidden">
+                <h4>조작법</h4>
+                <div>WASD: 이동</div>
+                <div>스페이스: 점프</div>
+                <div>Z: 공격</div>
+                <div>ESC: 일시정지</div>
+                <div>마우스: 시점 조작</div>
+            </div>
+            
+            <!-- 일시정지 메뉴 -->
+            <div id="pausePage" class="ui-element menu-buttons hidden">
+                <h2>게임 일시정지</h2>
+                <button class="btn" onclick="resumeGame()">이어서 하기</button>
+                <button class="btn" onclick="endGame()">게임 종료</button>
+            </div>
+            
+            <!-- 성공 메시지 -->
+            <div id="successMessage" class="ui-element success-message hidden">
+                Success!
+            </div>
+            
+            <!-- 실패 메시지 -->
+            <div id="failMessage" class="ui-element success-message hidden" style="background: linear-gradient(45deg, #ff6b6b 0%, #ee5a24 100%);">
+                Game Over!
+            </div>
+            
+            <!-- 게임 정보 -->
+            <div id="gameInfo" class="ui-element game-info hidden">
+                <div>목표: <span style="color: #00ff00;">초록색 출구</span>에 도달하세요!</div>
+                <div>시간: <span id="gameTime">0</span>초</div>
+            </div>
         </div>
-    </div>
-    
-    <div id="gameModeMenu" class="container hidden">
-        <h1>게임 모드 선택</h1>
-        <div class="menu-buttons">
-            <button class="btn" onclick="startGame('first-person')">1인칭 모드</button>
-            <button class="btn" onclick="startGame('third-person')">3인칭 모드</button>
-        </div>
-        <button class="btn" onclick="showMainMenu()" style="margin-top: 20px; background: rgba(255,255,255,0.2);">뒤로가기</button>
-    </div>
-    
-    <div id="customGameMenu" class="container hidden">
-        <h1>커스텀 게임 만들기</h1>
-        <p>미로 크기와 난이도를 설정하세요</p>
-        <div class="menu-buttons">
-            <label for="mazeSize">미로 크기: </label>
-            <select id="mazeSize">
-                <option value="small">작음 (10x10)</option>
-                <option value="medium" selected>보통 (15x15)</option>
-                <option value="large">큼 (20x20)</option>
-            </select>
-            <br><br>
-            <button class="btn" onclick="startCustomGame()">커스텀 게임 시작</button>
-        </div>
-        <button class="btn" onclick="showMainMenu()" style="margin-top: 20px; background: rgba(255,255,255,0.2);">뒤로가기</button>
-    </div>
-    
-    <div id="gameContainer" class="hidden">
-        <button class="back-btn" onclick="showMainMenu()">메인 메뉴</button>
-        <div class="controls">
-            <div>조작법:</div>
-            <div>방향키: 이동</div>
-            <div>스페이스: 점프</div>
-            <div>Z: 공격</div>
-        </div>
-        <canvas id="gameCanvas" class="game-canvas" width="800" height="600"></canvas>
     </div>
 
+    <!-- Three.js 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
     <script>
-        let currentGameMode = '';
-        let maze = [];
-        let player = { x: 1, y: 1 };
-        let exit = { x: 13, y: 13 };
-        let gameRunning = false;
-        let canvas, ctx;
-        let keys = {};
-        let lastKeyTime = {};
-        let keyDelay = 200; // 200ms 딜레이
-        
-        // 메뉴 관리 함수들
-        function showMainMenu() {
-            document.getElementById('mainMenu').classList.remove('hidden');
-            document.getElementById('gameModeMenu').classList.add('hidden');
-            document.getElementById('customGameMenu').classList.add('hidden');
-            document.getElementById('gameContainer').classList.add('hidden');
-            gameRunning = false;
-        }
-        
-        function showGameModes() {
-            document.getElementById('mainMenu').classList.add('hidden');
-            document.getElementById('gameModeMenu').classList.remove('hidden');
-        }
-        
-        function showCustomGame() {
-            document.getElementById('mainMenu').classList.add('hidden');
-            document.getElementById('customGameMenu').classList.remove('hidden');
-        }
-        
-        // 미로 생성 함수
-        function generateMaze(size) {
-            const maze = Array(size).fill().map(() => Array(size).fill(1));
-            
-            function carve(x, y) {
-                maze[y][x] = 0;
+        // 게임 상태 관리
+        class GameState {
+            constructor() {
+                this.currentPage = 'start';
+                this.gameMode = null;
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.player = null;
+                this.maze = null;
+                this.exit = null;
+                this.gameStartTime = 0;
+                this.gamePaused = false;
+                this.gameWon = false;
+                this.mazeSize = 15;
+                this.playerPosition = { x: 1, z: 1 };
+                this.exitPosition = { x: 13, z: 13 };
+                this.customGames = [
+                    { width: 15, height: 15, start: {x: 1, z: 1}, exit: {x: 13, z: 13} },
+                    { width: 20, height: 20, start: {x: 2, z: 2}, exit: {x: 18, z: 18} },
+                    { width: 10, height: 10, start: {x: 1, z: 1}, exit: {x: 8, z: 8} }
+                ];
                 
-                const directions = [[0, 2], [2, 0], [0, -2], [-2, 0]];
-                directions.sort(() => Math.random() - 0.5);
-                
-                for (let [dx, dy] of directions) {
-                    const nx = x + dx;
-                    const ny = y + dy;
-                    
-                    if (nx > 0 && nx < size - 1 && ny > 0 && ny < size - 1 && maze[ny][nx] === 1) {
-                        maze[y + dy/2][x + dx/2] = 0;
-                        carve(nx, ny);
-                    }
-                }
+                this.keys = {};
+                this.mouse = { x: 0, y: 0 };
+                this.lastKeyTime = {};
+                this.keyDelay = 200;
             }
-            
-            carve(1, 1);
-            return maze;
         }
         
-        // 랜덤 위치 생성 (시작점과 출구가 너무 가깝지 않게)
-        function generateRandomPositions(size) {
-            let startX, startY, exitX, exitY;
-            
-            do {
-                startX = Math.floor(Math.random() * (size - 2)) + 1;
-                startY = Math.floor(Math.random() * (size - 2)) + 1;
-                exitX = Math.floor(Math.random() * (size - 2)) + 1;
-                exitY = Math.floor(Math.random() * (size - 2)) + 1;
-            } while (Math.abs(startX - exitX) + Math.abs(startY - exitY) < size / 2);
-            
-            return { start: { x: startX, y: startY }, exit: { x: exitX, y: exitY } };
-        }
-        
-        // 게임 시작 함수
-        function startGame(mode) {
-            currentGameMode = mode;
-            const size = 15;
-            maze = generateMaze(size);
-            
-            const positions = generateRandomPositions(size);
-            player = positions.start;
-            exit = positions.exit;
-            
-            // 시작점과 출구를 미로에서 열어줌
-            maze[player.y][player.x] = 0;
-            maze[exit.y][exit.x] = 0;
-            
-            document.getElementById('gameModeMenu').classList.add('hidden');
-            document.getElementById('gameContainer').classList.remove('hidden');
-            
-            initGame();
-        }
-        
-        function startCustomGame() {
-            const sizeSelect = document.getElementById('mazeSize').value;
-            let size;
-            
-            switch(sizeSelect) {
-                case 'small': size = 10; break;
-                case 'medium': size = 15; break;
-                case 'large': size = 20; break;
-                default: size = 15;
-            }
-            
-            maze = generateMaze(size);
-            const positions = generateRandomPositions(size);
-            player = positions.start;
-            exit = positions.exit;
-            
-            maze[player.y][player.x] = 0;
-            maze[exit.y][exit.x] = 0;
-            
-            currentGameMode = 'first-person'; // 기본값
-            
-            document.getElementById('customGameMenu').classList.add('hidden');
-            document.getElementById('gameContainer').classList.remove('hidden');
-            
-            initGame();
-        }
+        const gameState = new GameState();
         
         // 게임 초기화
         function initGame() {
-            canvas = document.getElementById('gameCanvas');
-            ctx = canvas.getContext('2d');
-            gameRunning = true;
+            const canvas = document.getElementById('gameCanvas');
             
-            // 키보드 이벤트 리스너
-            document.addEventListener('keydown', (e) => {
-                keys[e.code] = true;
-                handleInput(e.code);
-            });
+            // Three.js 초기화
+            gameState.scene = new THREE.Scene();
+            gameState.scene.background = new THREE.Color(0x87CEEB); // 하늘색 배경
             
-            document.addEventListener('keyup', (e) => {
-                keys[e.code] = false;
-            });
+            // 카메라 설정
+            gameState.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             
+            // 렌더러 설정
+            gameState.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            gameState.renderer.setSize(window.innerWidth, window.innerHeight);
+            gameState.renderer.shadowMap.enabled = true;
+            gameState.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // 조명 설정
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            gameState.scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 50, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            gameState.scene.add(directionalLight);
+            
+            // 이벤트 리스너
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('resize', onWindowResize);
+            
+            // 시작 페이지 표시
+            showStartPage();
+        }
+        
+        // 시작 페이지 표시
+        function showStartPage() {
+            gameState.currentPage = 'start';
+            hideAllPages();
+            document.getElementById('startPage').classList.remove('hidden');
+            
+            // 3D 블록 생성
+            create3DTitle();
+            
+            // 3초 후 메뉴로 자동 전환
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 1;
+                document.getElementById('startProgress').style.width = progress + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    showMenu();
+                }
+            }, 30);
+        }
+        
+        // 3D 제목 블록 생성
+        function create3DTitle() {
+            // 기존 오브젝트 제거
+            gameState.scene.clear();
+            
+            // 조명 다시 추가
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            gameState.scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 50, 50);
+            directionalLight.castShadow = true;
+            gameState.scene.add(directionalLight);
+            
+            // 3D 텍스트 블록들
+            const geometry = new THREE.BoxGeometry(2, 1, 0.5);
+            const materials = [
+                new THREE.MeshLambertMaterial({ color: 0x4facfe }),
+                new THREE.MeshLambertMaterial({ color: 0x00f2fe }),
+                new THREE.MeshLambertMaterial({ color: 0x667eea }),
+                new THREE.MeshLambertMaterial({ color: 0x764ba2 }),
+                new THREE.MeshLambertMaterial({ color: 0xf093fb }),
+                new THREE.MeshLambertMaterial({ color: 0xf5576c })
+            ];
+            
+            for (let i = 0; i < 6; i++) {
+                const cube = new THREE.Mesh(geometry, materials[i]);
+                cube.position.set((i - 2.5) * 2.5, Math.sin(Date.now() * 0.001 + i) * 0.5, 0);
+                cube.rotation.y = Date.now() * 0.001 + i;
+                cube.castShadow = true;
+                gameState.scene.add(cube);
+            }
+            
+            // 카메라 위치
+            gameState.camera.position.set(0, 5, 10);
+            gameState.camera.lookAt(0, 0, 0);
+        }
+        
+        // 메뉴 표시
+        function showMenu() {
+            gameState.currentPage = 'menu';
+            hideAllPages();
+            document.getElementById('menuPage').classList.remove('hidden');
+            
+            // 3D 캐릭터와 버튼들 생성
+            createMenuScene();
+        }
+        
+        // 메뉴 3D 씬 생성
+        function createMenuScene() {
+            gameState.scene.clear();
+            
+            // 조명 다시 추가
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            gameState.scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 10);
+            directionalLight.castShadow = true;
+            gameState.scene.add(directionalLight);
+            
+            // 3D 캐릭터 (간단한 캡슐 형태)
+            const characterGeometry = new THREE.CapsuleGeometry(0.5, 2, 4, 8);
+            const characterMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const character = new THREE.Mesh(characterGeometry, characterMaterial);
+            character.position.set(0, 1, 0);
+            character.castShadow = true;
+            gameState.scene.add(character);
+            
+            // 3D 버튼들
+            const buttonGeometry = new THREE.BoxGeometry(1.5, 0.3, 0.8);
+            const buttonMaterials = [
+                new THREE.MeshLambertMaterial({ color: 0xff4757 }), // 1인칭
+                new THREE.MeshLambertMaterial({ color: 0x2ed573 }), // 3인칭
+                new THREE.MeshLambertMaterial({ color: 0x3742fa })  // 커스텀
+            ];
+            
+            for (let i = 0; i < 3; i++) {
+                const button = new THREE.Mesh(buttonGeometry, buttonMaterials[i]);
+                button.position.set((i - 1) * 3, 2.5, -2);
+                button.castShadow = true;
+                gameState.scene.add(button);
+            }
+            
+            // 바닥
+            const floorGeometry = new THREE.PlaneGeometry(20, 20);
+            const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x8FBC8F });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            gameState.scene.add(floor);
+            
+            gameState.camera.position.set(0, 3, 8);
+            gameState.camera.lookAt(0, 1.5, 0);
+        }
+        
+        // 게임 시작
+        function startGame(mode) {
+            gameState.gameMode = mode;
+            gameState.currentPage = 'game';
+            gameState.gameStartTime = Date.now();
+            gameState.gamePaused = false;
+            gameState.gameWon = false;
+            
+            hideAllPages();
+            document.getElementById('gameStatus').classList.remove('hidden');
+            document.getElementById('gameControls').classList.remove('hidden');
+            document.getElementById('gameInfo').classList.remove('hidden');
+            
+            document.getElementById('currentMode').textContent = 
+                mode === 'mode1' ? '1인칭 모드' : 
+                mode === 'mode2' ? '3인칭 모드' : '커스텀 모드';
+            
+            // 미로 생성 및 게임 씬 설정
+            createGameScene(mode);
+            
+            // 게임 루프 시작
             gameLoop();
         }
         
-        // 입력 처리
-        function handleInput(keyCode) {
-            if (!gameRunning) return;
+        // 커스텀 게임 생성
+        function createCustomGame() {
+            const size = parseInt(document.getElementById('mazeSize').value);
+            gameState.mazeSize = size;
             
-            // 키 딜레이 체크 (이동 키만)
-            const currentTime = Date.now();
-            const moveKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+            // 랜덤 커스텀 게임 선택
+            const randomGame = gameState.customGames[Math.floor(Math.random() * gameState.customGames.length)];
+            gameState.playerPosition = randomGame.start;
+            gameState.exitPosition = randomGame.exit;
             
-            if (moveKeys.includes(keyCode)) {
-                if (lastKeyTime[keyCode] && currentTime - lastKeyTime[keyCode] < keyDelay) {
-                    return; // 딜레이 시간이 지나지 않았으면 무시
-                }
-                lastKeyTime[keyCode] = currentTime;
-            }
-            
-            let newX = player.x;
-            let newY = player.y;
-            
-            switch(keyCode) {
-                case 'ArrowUp':
-                    newY--;
-                    break;
-                case 'ArrowDown':
-                    newY++;
-                    break;
-                case 'ArrowLeft':
-                    newX--;
-                    break;
-                case 'ArrowRight':
-                    newX++;
-                    break;
-                case 'Space':
-                    // 점프 효과 (시각적으로만)
-                    console.log('점프!');
-                    break;
-                case 'KeyZ':
-                    // 공격 효과 (시각적으로만)
-                    console.log('공격!');
-                    break;
-            }
-            
-            // 이동 가능한지 확인
-            if (newX >= 0 && newX < maze[0].length && 
-                newY >= 0 && newY < maze.length && 
-                maze[newY][newX] === 0) {
-                player.x = newX;
-                player.y = newY;
-                
-                // 출구에 도달했는지 확인
-                if (player.x === exit.x && player.y === exit.y) {
-                    showSuccess();
-                }
-            }
+            startGame('custom');
         }
         
-        // 성공 메시지 표시
-        function showSuccess() {
-            gameRunning = false;
-            const successDiv = document.createElement('div');
-            successDiv.className = 'success-message';
-            successDiv.textContent = 'Success!';
-            document.body.appendChild(successDiv);
+        // 게임 씬 생성
+        function createGameScene(mode) {
+            gameState.scene.clear();
             
-            setTimeout(() => {
-                document.body.removeChild(successDiv);
-                showMainMenu();
-            }, 2000);
+            // 조명 설정
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            gameState.scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(50, 50, 50);
+            directionalLight.castShadow = true;
+            gameState.scene.add(directionalLight);
+            
+            // 미로 생성
+            createMaze();
+            
+            // 플레이어 생성
+            createPlayer();
+            
+            // 출구 생성
+            createExit();
+            
+            // 카메라 설정
+            setupCamera(mode);
         }
         
-        // 게임 렌더링
-        function render() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 미로 생성
+        function createMaze() {
+            const size = gameState.mazeSize;
+            const wallGeometry = new THREE.BoxGeometry(1, 2, 1);
+            const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x696969 });
             
-            const cellSize = Math.min(canvas.width / maze[0].length, canvas.height / maze.length);
+            gameState.maze = [];
             
-            if (currentGameMode === 'first-person') {
-                renderFirstPerson();
-            } else {
-                renderThirdPerson(cellSize);
-            }
-        }
-        
-        function renderFirstPerson() {
-            // 1인칭 시야 구현 (간단한 버전)
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // 플레이어 위치에서 주변 벽 그리기
-            const viewDistance = 5;
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            
-            for (let dy = -viewDistance; dy <= viewDistance; dy++) {
-                for (let dx = -viewDistance; dx <= viewDistance; dx++) {
-                    const mapX = player.x + dx;
-                    const mapY = player.y + dy;
+            for (let i = 0; i < size; i++) {
+                gameState.maze[i] = [];
+                for (let j = 0; j < size; j++) {
+                    // 외곽은 벽, 내부는 랜덤
+                    const isWall = i === 0 || i === size - 1 || j === 0 || j === size - 1 || 
+                                  (Math.random() < 0.3 && !(i === 1 && j === 1) && !(i === size - 2 && j === size - 2));
                     
-                    if (mapX >= 0 && mapX < maze[0].length && 
-                        mapY >= 0 && mapY < maze.length) {
-                        
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        const brightness = Math.max(0, 1 - distance / viewDistance);
-                        
-                        if (maze[mapY][mapX] === 1) {
-                            ctx.fillStyle = `rgb(${Math.floor(100 * brightness)}, ${Math.floor(100 * brightness)}, ${Math.floor(150 * brightness)})`;
-                            ctx.fillRect(
-                                centerX + dx * 30 - 15,
-                                centerY + dy * 30 - 15,
-                                30, 30
-                            );
-                        }
+                    gameState.maze[i][j] = isWall ? 1 : 0;
+                    
+                    if (isWall) {
+                        const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+                        wall.position.set(j - size/2, 1, i - size/2);
+                        wall.castShadow = true;
+                        wall.receiveShadow = true;
+                        gameState.scene.add(wall);
                     }
                 }
             }
             
-            // 출구 표시
-            if (Math.abs(player.x - exit.x) <= viewDistance && 
-                Math.abs(player.y - exit.y) <= viewDistance) {
-                ctx.fillStyle = '#00ff00';
-                ctx.fillRect(
-                    centerX + (exit.x - player.x) * 30 - 15,
-                    centerY + (exit.y - player.y) * 30 - 15,
-                    30, 30
-                );
-            }
-            
-            // 플레이어 중심점
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
-            ctx.fill();
+            // 바닥
+            const floorGeometry = new THREE.PlaneGeometry(size, size);
+            const floorMaterial = new THREE.MeshLambertMaterial({ color: 0xDEB887 });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            gameState.scene.add(floor);
         }
         
-        function renderThirdPerson(cellSize) {
-            // 3인칭 시야로 전체 미로 그리기
-            for (let y = 0; y < maze.length; y++) {
-                for (let x = 0; x < maze[y].length; x++) {
-                    if (maze[y][x] === 1) {
-                        ctx.fillStyle = '#333';
-                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-                    } else {
-                        ctx.fillStyle = '#fff';
-                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-                    }
-                }
+        // 플레이어 생성
+        function createPlayer() {
+            const playerGeometry = new THREE.CapsuleGeometry(0.3, 1.2, 4, 8);
+            const playerMaterial = new THREE.MeshLambertMaterial({ color: 0xff6b6b });
+            gameState.player = new THREE.Mesh(playerGeometry, playerMaterial);
+            
+            const pos = gameState.playerPosition;
+            gameState.player.position.set(pos.x - gameState.mazeSize/2, 0.6, pos.z - gameState.mazeSize/2);
+            gameState.player.castShadow = true;
+            gameState.scene.add(gameState.player);
+        }
+        
+        // 출구 생성
+        function createExit() {
+            const exitGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 8);
+            const exitMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x00ff00,
+                emissive: 0x003300,
+                transparent: true,
+                opacity: 0.8
+            });
+            gameState.exit = new THREE.Mesh(exitGeometry, exitMaterial);
+            
+            const pos = gameState.exitPosition;
+            gameState.exit.position.set(pos.x - gameState.mazeSize/2, 0.1, pos.z - gameState.mazeSize/2);
+            gameState.scene.add(gameState.exit);
+        }
+        
+        // 카메라 설정
+        function setupCamera(mode) {
+            if (mode === 'mode1' || mode === 'custom') {
+                // 1인칭 시점
+                gameState.camera.position.copy(gameState.player.position);
+                gameState.camera.position.y = 1.5;
+            } else {
+                // 3인칭 시점
+                gameState.camera.position.set(
+                    gameState.player.position.x + 5,
+                    gameState.player.position.y + 8,
+                    gameState.player.position.z + 5
+                );
+                gameState.camera.lookAt(gameState.player.position);
             }
-            
-            // 출구 그리기
-            ctx.fillStyle = '#00ff00';
-            ctx.fillRect(exit.x * cellSize + 2, exit.y * cellSize + 2, cellSize - 4, cellSize - 4);
-            
-            // 플레이어 그리기
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.arc(
-                player.x * cellSize + cellSize / 2,
-                player.y * cellSize + cellSize / 2,
-                cellSize / 3,
-                0, 2 * Math.PI
-            );
-            ctx.fill();
         }
         
         // 게임 루프
         function gameLoop() {
-            if (gameRunning) {
-                render();
+            if (gameState.currentPage !== 'game' || gameState.gamePaused) {
                 requestAnimationFrame(gameLoop);
+                return;
+            }
+            
+            // 시간 업데이트
+            const currentTime = Math.floor((Date.now() - gameState.gameStartTime) / 1000);
+            document.getElementById('gameTime').textContent = currentTime;
+            
+            // 플레이어 이동 처리
+            handlePlayerMovement();
+            
+            // 승리 조건 체크
+            checkWinCondition();
+            
+            // 3D 요소 애니메이션
+            animateScene();
+            
+            // 렌더링
+            gameState.renderer.render(gameState.scene, gameState.camera);
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // 플레이어 이동 처리
+        function handlePlayerMovement() {
+            const currentTime = Date.now();
+            const speed = 1;
+            let moved = false;
+            
+            // 키 입력 딜레이 체크
+            function canMove(key) {
+                if (gameState.lastKeyTime[key] && currentTime - gameState.lastKeyTime[key] < gameState.keyDelay) {
+                    return false;
+                }
+                gameState.lastKeyTime[key] = currentTime;
+                return true;
+            }
+            
+            let newX = gameState.playerPosition.x;
+            let newZ = gameState.playerPosition.z;
+            
+            if ((gameState.keys['KeyW'] || gameState.keys['ArrowUp']) && canMove('up')) {
+                newZ--;
+                moved = true;
+            }
+            if ((gameState.keys['KeyS'] || gameState.keys['ArrowDown']) && canMove('down')) {
+                newZ++;
+                moved = true;
+            }
+            if ((gameState.keys['KeyA'] || gameState.keys['ArrowLeft']) && canMove('left')) {
+                newX--;
+                moved = true;
+            }
+            if ((gameState.keys['KeyD'] || gameState.keys['ArrowRight']) && canMove('right')) {
+                newX++;
+                moved = true;
+            }
+            
+            // 벽 충돌 체크
+            if (moved && newX >= 0 && newX < gameState.mazeSize && 
+                newZ >= 0 && newZ < gameState.mazeSize && 
+                gameState.maze[newZ][newX] === 0) {
+                
+                gameState.playerPosition.x = newX;
+                gameState.playerPosition.z = newZ;
+                
+                // 플레이어 3D 오브젝트 위치 업데이트
+                gameState.player.position.set(
+                    newX - gameState.mazeSize/2, 
+                    0.6, 
+                    newZ - gameState.mazeSize/2
+                );
+                
+                // 카메라 업데이트
+                setupCamera(gameState.gameMode);
             }
         }
         
-        // 키보드 이벤트 방지 (페이지 스크롤 등)
-        document.addEventListener('keydown', (e) => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
-                e.preventDefault();
+        // 승리 조건 체크
+        function checkWinCondition() {
+            const playerPos = gameState.playerPosition;
+            const exitPos = gameState.exitPosition;
+            
+            if (Math.abs(playerPos.x - exitPos.x) <= 1 && Math.abs(playerPos.z - exitPos.z) <= 1) {
+                gameWon();
             }
-        });
+        }
+        
+        // 승리 처리
+        function gameWon() {
+            gameState.gameWon = true;
+            hideAllPages();
+            document.getElementById('successMessage').classList.remove('hidden');
+            
+            setTimeout(() => {
+                showStartPage();
+            }, 2000);
+        }
+        
+        // 씬 애니메이션
+        function animateScene() {
+            const time = Date.now() * 0.001;
+            
+            // 출구 회전 및 발광 효과
+            if (gameState.exit) {
+                gameState.exit.rotation.y = time * 2;
+                gameState.exit.material.emissive.setHex(0x003300 + Math.sin(time * 5) * 0x002200);
+            }
+            
+            // 타이틀 화면 블록 애니메이션
+            if (gameState.currentPage === 'start') {
+                gameState.scene.children.forEach((child, index) => {
+                    if (child.type === 'Mesh' && child.geometry.type === 'BoxGeometry') {
+                        child.position.y = Math.sin(time + index) * 0.5;
+                        child.rotation.y = time + index;
+                    }
+                });
+            }
+        }
+        
+        // 일시정지
+        function pauseGame() {
+            gameState.gamePaused = true;
+            hideAllPages();
+            document.getElementById('pausePage').classList.remove('hidden');
+        }
+        
+        // 게임 재개
+        function resumeGame() {
+            gameState.gamePaused = false;
+            hideAllPages();
+            document.getElementById('gameStatus').classList.remove('hidden');
+            document.getElementById('gameControls').classList.remove('hidden');
+            document.getElementById('gameInfo').classList.remove('hidden');
+        }
+        
+        // 게임 종료
+        function endGame() {
+            hideAllPages();
+            document.getElementById('failMessage').classList.remove('hidden');
+            
+            setTimeout(() => {
+                showStartPage();
+            }, 2000);
+        }
+        
+        // 모든 페이지 숨기기
+        function hideAllPages() {
+            document.querySelectorAll('.ui-element').forEach(el => {
+                el.classList.add('hidden');
+            });
+        }
+        
+        // 이벤트 핸들러들
+        function onKeyDown(event) {
+            gameState.keys[event.code] = true;
+            
+            if (event.code === 'Escape' && gameState.currentPage === 'game') {
+                pauseGame();
+            }
+            
+            // 기본 동작 방지
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) {
+                event.preventDefault();
+            }
+        }
+        
+        function onKeyUp(event) {
+            gameState.keys[event.code] = false;
+        }
+        
+        function onMouseMove(event) {
+            gameState.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            gameState.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+        
+        function onWindowResize() {
+            gameState.camera.aspect = window.innerWidth / window.innerHeight;
+            gameState.camera.updateProjectionMatrix();
+            gameState.renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // 페이지 로드시 게임 초기화
+        window.addEventListener('load', initGame);
+        
+        // 애니메이션 루프 시작
+        function animate() {
+            if (gameState.currentPage === 'start' || gameState.currentPage === 'menu') {
+                animateScene();
+                gameState.renderer.render(gameState.scene, gameState.camera);
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
     </script>
 </body>
 </html>

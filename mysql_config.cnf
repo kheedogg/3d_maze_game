@@ -1,0 +1,6 @@
+[mysqld]
+port = 1818
+bind-address = 127.0.0.1
+datadir = /opt/homebrew/var/mysql
+socket = /tmp/mysql_1818.sock
+pid-file = /tmp/mysql_1818.pid

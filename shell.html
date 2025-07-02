@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>DoMazeGame - 3D Maze Adventure</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+    }
+    
+    .container {
+      max-width: 1024px;
+      margin: 0 auto;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+    }
+    
+    h1 {
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      margin-bottom: 20px;
+    }
+    
+    canvas {
+      border: 3px solid #fff;
+      border-radius: 10px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      display: block;
+      margin: 20px auto;
+    }
+    
+    .controls {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+      text-align: left;
+      max-width: 600px;
+      margin: 20px auto;
+    }
+    
+    .controls h3 {
+      margin-top: 0;
+      color: #4facfe;
+    }
+    
+    .spinner {
+      height: 30px;
+      width: 30px;
+      margin: 0px auto;
+      animation: rotation 0.8s linear infinite;
+      border-left: 5px solid #4facfe;
+      border-right: 5px solid #4facfe;
+      border-bottom: 5px solid #4facfe;
+      border-top: 5px solid transparent;
+      border-radius: 100%;
+      display: none;
+    }
+    
+    @keyframes rotation {
+      from {transform: rotate(0deg);}
+      to {transform: rotate(360deg);}
+    }
+    
+    #output {
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 5px;
+      padding: 10px;
+      margin: 10px 0;
+      text-align: left;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .emscripten {
+      padding-right: 0;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 DoMazeGame - 3D Maze Adventure</h1>
+    
+    <div class="controls">
+      <h3>🎯 게임 설명</h3>
+      <p>3D 환경에서 펼쳐지는 미로 탈출 게임입니다!</p>
+      <ul>
+        <li><strong>시작 화면:</strong> 3초 후 자동으로 메뉴로 이동</li>
+        <li><strong>1인칭 모드:</strong> 몰입감 있는 1인칭 시점</li>
+        <li><strong>3인칭 모드:</strong> 전략적인 3인칭 시점</li>
+        <li><strong>커스텀 모드:</strong> 데이터베이스에서 랜덤 맵 로드</li>
+      </ul>
+      
+      <h3>🎮 조작법</h3>
+      <ul>
+        <li><strong>WASD 또는 방향키:</strong> 캐릭터 이동</li>
+        <li><strong>스페이스:</strong> 점프</li>
+        <li><strong>Z:</strong> 공격 (칼 휘두르기)</li>
+        <li><strong>ESC:</strong> 일시정지 메뉴</li>
+        <li><strong>마우스:</strong> 메뉴 버튼 클릭</li>
+      </ul>
+    </div>
+
+    <div class="spinner" id="spinner"></div>
+    <div class="emscripten" id="status">게임 로딩 중...</div>
+
+    <div class="emscripten">
+      <progress value="0" max="100" id="progress" hidden="1"></progress>
+    </div>
+
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+
+    <div id="output" style="display: none;"></div>
+
+    <div class="controls">
+      <h3>🏆 목표</h3>
+      <p>미로를 탐험하여 <span style="color: #00ff00;">초록색 출구</span>에 도달하세요!</p>
+      <p>벽에 막히지 않도록 주의하고, 최단 경로를 찾아보세요.</p>
+    </div>
+  </div>
+
+  <script type='text/javascript'>
+    var statusElement = document.getElementById('status');
+    var progressElement = document.getElementById('progress');
+    var spinnerElement = document.getElementById('spinner');
+
+    var Module = {
+      preRun: [],
+      postRun: [],
+      print: (function() {
+        var element = document.getElementById('output');
+        if (element) element.innerText = '';
+        return function(text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          console.log(text);
+          if (element) {
+            element.innerText += text + "\n";
+            element.scrollTop = element.scrollHeight;
+          }
+        };
+      })(),
+      canvas: (function() {
+        var canvas = document.getElementById('canvas');
+        canvas.addEventListener("webglcontextlost", function(e) {
+          alert('WebGL context lost. You will need to reload the page.');
+          e.preventDefault();
+        }, false);
+        return canvas;
+      })(),
+      setStatus: function(text) {
+        if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+        if (text === Module.setStatus.last.text) return;
+        var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+        var now = Date.now();
+        if (m && now - Module.setStatus.last.time < 30) return;
+        Module.setStatus.last.time = now;
+        Module.setStatus.last.text = text;
+        if (text) {
+          statusElement.innerHTML = text;
+          spinnerElement.style.display = 'block';
+        } else {
+          statusElement.innerHTML = '게임이 준비되었습니다! 클릭하여 시작하세요.';
+          spinnerElement.style.display = 'none';
+        }
+      },
+      totalDependencies: 0,
+      monitorRunDependencies: function(left) {
+        this.totalDependencies = Math.max(this.totalDependencies, left);
+        Module.setStatus(left ? '종속성 로딩 중... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : '');
+      }
+    };
+    Module.setStatus('게임 다운로드 중...');
+    window.onerror = function() {
+      Module.setStatus('예외가 발생했습니다. 콘솔을 확인하세요.');
+      spinnerElement.style.display = 'none';
+      Module.setStatus = function(text) {
+        if (text) console.error('[post-exception status] ' + text);
+      };
+    };
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>

@@ -1,0 +1,5 @@
+ERROR:  authentication failed: The account "dohee@enuma.com" may not start an ngrok agent session until the admin's email address is verified. Verify your email at https://dashboard.ngrok.com/user/settings
+ERROR:  
+ERROR:  ERR_NGROK_123
+ERROR:  https://ngrok.com/docs/errors/err_ngrok_123
+ERROR:  
