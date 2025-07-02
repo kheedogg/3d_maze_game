@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dohee's 3D Maze Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .game-canvas {
+            border: 3px solid #fff;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+        
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.9em;
+        }
+        
+        .success-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="mainMenu" class="container">
+        <h1>Welcome to Dohee's 3D Maze Game!</h1>
+        <div class="menu-buttons">
+            <button class="btn" onclick="showGameModes()">게임 모드 선택</button>
+            <button class="btn" onclick="showCustomGame()">커스텀 게임 만들기</button>
+        </div>
+    </div>
+    
+    <div id="gameModeMenu" class="container hidden">
+        <h1>게임 모드 선택</h1>
+        <div class="menu-buttons">
+            <button class="btn" onclick="startGame('first-person')">1인칭 모드</button>
+            <button class="btn" onclick="startGame('third-person')">3인칭 모드</button>
+        </div>
+        <button class="btn" onclick="showMainMenu()" style="margin-top: 20px; background: rgba(255,255,255,0.2);">뒤로가기</button>
+    </div>
+    
+    <div id="customGameMenu" class="container hidden">
+        <h1>커스텀 게임 만들기</h1>
+        <p>미로 크기와 난이도를 설정하세요</p>
+        <div class="menu-buttons">
+            <label for="mazeSize">미로 크기: </label>
+            <select id="mazeSize">
+                <option value="small">작음 (10x10)</option>
+                <option value="medium" selected>보통 (15x15)</option>
+                <option value="large">큼 (20x20)</option>
+            </select>
+            <br><br>
+            <button class="btn" onclick="startCustomGame()">커스텀 게임 시작</button>
+        </div>
+        <button class="btn" onclick="showMainMenu()" style="margin-top: 20px; background: rgba(255,255,255,0.2);">뒤로가기</button>
+    </div>
+    
+    <div id="gameContainer" class="hidden">
+        <button class="back-btn" onclick="showMainMenu()">메인 메뉴</button>
+        <div class="controls">
+            <div>조작법:</div>
+            <div>방향키: 이동</div>
+            <div>스페이스: 점프</div>
+            <div>Z: 공격</div>
+        </div>
+        <canvas id="gameCanvas" class="game-canvas" width="800" height="600"></canvas>
+    </div>
+
+    <script>
+        let currentGameMode = '';
+        let maze = [];
+        let player = { x: 1, y: 1 };
+        let exit = { x: 13, y: 13 };
+        let gameRunning = false;
+        let canvas, ctx;
+        let keys = {};
+        
+        // 메뉴 관리 함수들
+        function showMainMenu() {
+            document.getElementById('mainMenu').classList.remove('hidden');
+            document.getElementById('gameModeMenu').classList.add('hidden');
+            document.getElementById('customGameMenu').classList.add('hidden');
+            document.getElementById('gameContainer').classList.add('hidden');
+            gameRunning = false;
+        }
+        
+        function showGameModes() {
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('gameModeMenu').classList.remove('hidden');
+        }
+        
+        function showCustomGame() {
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('customGameMenu').classList.remove('hidden');
+        }
+        
+        // 미로 생성 함수
+        function generateMaze(size) {
+            const maze = Array(size).fill().map(() => Array(size).fill(1));
+            
+            function carve(x, y) {
+                maze[y][x] = 0;
+                
+                const directions = [[0, 2], [2, 0], [0, -2], [-2, 0]];
+                directions.sort(() => Math.random() - 0.5);
+                
+                for (let [dx, dy] of directions) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    
+                    if (nx > 0 && nx < size - 1 && ny > 0 && ny < size - 1 && maze[ny][nx] === 1) {
+                        maze[y + dy/2][x + dx/2] = 0;
+                        carve(nx, ny);
+                    }
+                }
+            }
+            
+            carve(1, 1);
+            return maze;
+        }
+        
+        // 랜덤 위치 생성 (시작점과 출구가 너무 가깝지 않게)
+        function generateRandomPositions(size) {
+            let startX, startY, exitX, exitY;
+            
+            do {
+                startX = Math.floor(Math.random() * (size - 2)) + 1;
+                startY = Math.floor(Math.random() * (size - 2)) + 1;
+                exitX = Math.floor(Math.random() * (size - 2)) + 1;
+                exitY = Math.floor(Math.random() * (size - 2)) + 1;
+            } while (Math.abs(startX - exitX) + Math.abs(startY - exitY) < size / 2);
+            
+            return { start: { x: startX, y: startY }, exit: { x: exitX, y: exitY } };
+        }
+        
+        // 게임 시작 함수
+        function startGame(mode) {
+            currentGameMode = mode;
+            const size = 15;
+            maze = generateMaze(size);
+            
+            const positions = generateRandomPositions(size);
+            player = positions.start;
+            exit = positions.exit;
+            
+            // 시작점과 출구를 미로에서 열어줌
+            maze[player.y][player.x] = 0;
+            maze[exit.y][exit.x] = 0;
+            
+            document.getElementById('gameModeMenu').classList.add('hidden');
+            document.getElementById('gameContainer').classList.remove('hidden');
+            
+            initGame();
+        }
+        
+        function startCustomGame() {
+            const sizeSelect = document.getElementById('mazeSize').value;
+            let size;
+            
+            switch(sizeSelect) {
+                case 'small': size = 10; break;
+                case 'medium': size = 15; break;
+                case 'large': size = 20; break;
+                default: size = 15;
+            }
+            
+            maze = generateMaze(size);
+            const positions = generateRandomPositions(size);
+            player = positions.start;
+            exit = positions.exit;
+            
+            maze[player.y][player.x] = 0;
+            maze[exit.y][exit.x] = 0;
+            
+            currentGameMode = 'first-person'; // 기본값
+            
+            document.getElementById('customGameMenu').classList.add('hidden');
+            document.getElementById('gameContainer').classList.remove('hidden');
+            
+            initGame();
+        }
+        
+        // 게임 초기화
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            gameRunning = true;
+            
+            // 키보드 이벤트 리스너
+            document.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                handleInput(e.code);
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+            
+            gameLoop();
+        }
+        
+        // 입력 처리
+        function handleInput(keyCode) {
+            if (!gameRunning) return;
+            
+            let newX = player.x;
+            let newY = player.y;
+            
+            switch(keyCode) {
+                case 'ArrowUp':
+                    newY--;
+                    break;
+                case 'ArrowDown':
+                    newY++;
+                    break;
+                case 'ArrowLeft':
+                    newX--;
+                    break;
+                case 'ArrowRight':
+                    newX++;
+                    break;
+                case 'Space':
+                    // 점프 효과 (시각적으로만)
+                    console.log('점프!');
+                    break;
+                case 'KeyZ':
+                    // 공격 효과 (시각적으로만)
+                    console.log('공격!');
+                    break;
+            }
+            
+            // 이동 가능한지 확인
+            if (newX >= 0 && newX < maze[0].length && 
+                newY >= 0 && newY < maze.length && 
+                maze[newY][newX] === 0) {
+                player.x = newX;
+                player.y = newY;
+                
+                // 출구에 도달했는지 확인
+                if (player.x === exit.x && player.y === exit.y) {
+                    showSuccess();
+                }
+            }
+        }
+        
+        // 성공 메시지 표시
+        function showSuccess() {
+            gameRunning = false;
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.textContent = 'Success!';
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                document.body.removeChild(successDiv);
+                showMainMenu();
+            }, 2000);
+        }
+        
+        // 게임 렌더링
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const cellSize = Math.min(canvas.width / maze[0].length, canvas.height / maze.length);
+            
+            if (currentGameMode === 'first-person') {
+                renderFirstPerson();
+            } else {
+                renderThirdPerson(cellSize);
+            }
+        }
+        
+        function renderFirstPerson() {
+            // 1인칭 시야 구현 (간단한 버전)
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 플레이어 위치에서 주변 벽 그리기
+            const viewDistance = 5;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            for (let dy = -viewDistance; dy <= viewDistance; dy++) {
+                for (let dx = -viewDistance; dx <= viewDistance; dx++) {
+                    const mapX = player.x + dx;
+                    const mapY = player.y + dy;
+                    
+                    if (mapX >= 0 && mapX < maze[0].length && 
+                        mapY >= 0 && mapY < maze.length) {
+                        
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const brightness = Math.max(0, 1 - distance / viewDistance);
+                        
+                        if (maze[mapY][mapX] === 1) {
+                            ctx.fillStyle = `rgb(${Math.floor(100 * brightness)}, ${Math.floor(100 * brightness)}, ${Math.floor(150 * brightness)})`;
+                            ctx.fillRect(
+                                centerX + dx * 30 - 15,
+                                centerY + dy * 30 - 15,
+                                30, 30
+                            );
+                        }
+                    }
+                }
+            }
+            
+            // 출구 표시
+            if (Math.abs(player.x - exit.x) <= viewDistance && 
+                Math.abs(player.y - exit.y) <= viewDistance) {
+                ctx.fillStyle = '#00ff00';
+                ctx.fillRect(
+                    centerX + (exit.x - player.x) * 30 - 15,
+                    centerY + (exit.y - player.y) * 30 - 15,
+                    30, 30
+                );
+            }
+            
+            // 플레이어 중심점
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        function renderThirdPerson(cellSize) {
+            // 3인칭 시야로 전체 미로 그리기
+            for (let y = 0; y < maze.length; y++) {
+                for (let x = 0; x < maze[y].length; x++) {
+                    if (maze[y][x] === 1) {
+                        ctx.fillStyle = '#333';
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    } else {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+            
+            // 출구 그리기
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(exit.x * cellSize + 2, exit.y * cellSize + 2, cellSize - 4, cellSize - 4);
+            
+            // 플레이어 그리기
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(
+                player.x * cellSize + cellSize / 2,
+                player.y * cellSize + cellSize / 2,
+                cellSize / 3,
+                0, 2 * Math.PI
+            );
+            ctx.fill();
+        }
+        
+        // 게임 루프
+        function gameLoop() {
+            if (gameRunning) {
+                render();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // 키보드 이벤트 방지 (페이지 스크롤 등)
+        document.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
