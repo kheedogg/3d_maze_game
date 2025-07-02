@@ -168,6 +168,8 @@
         let gameRunning = false;
         let canvas, ctx;
         let keys = {};
+        let lastKeyTime = {};
+        let keyDelay = 200; // 200ms 딜레이
         
         // 메뉴 관리 함수들
         function showMainMenu() {
@@ -296,6 +298,17 @@
         // 입력 처리
         function handleInput(keyCode) {
             if (!gameRunning) return;
+            
+            // 키 딜레이 체크 (이동 키만)
+            const currentTime = Date.now();
+            const moveKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+            
+            if (moveKeys.includes(keyCode)) {
+                if (lastKeyTime[keyCode] && currentTime - lastKeyTime[keyCode] < keyDelay) {
+                    return; // 딜레이 시간이 지나지 않았으면 무시
+                }
+                lastKeyTime[keyCode] = currentTime;
+            }
             
             let newX = player.x;
             let newY = player.y;
